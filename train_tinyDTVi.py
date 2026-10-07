@@ -16,7 +16,7 @@ import os
 os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True,max_split_size_mb:64'
 
 # -----------------------------------------------------------------------------
-out_dir = 'tinyDTVi-v1-non-moe'
+out_dir = 'tinyDTVi-500M'
 eval_interval = 250
 log_interval = 1
 eval_iters = 200
@@ -152,8 +152,8 @@ else:
 model.to(device)
 
 # --- LOAD TOKENIZER FOR MONITORING ---
-print("tokenizer path: ./tinyDTVi-tokenizer-v2")
-tokenizer = AutoTokenizer.from_pretrained("./tinyDTVi-tokenizer-v2")
+print("tokenizer path: ./tinyDTVi-tokenizer")
+tokenizer = AutoTokenizer.from_pretrained("./tinyDTVi-tokenizer")
 
 
 

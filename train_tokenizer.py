@@ -8,7 +8,7 @@ from clean_utils import clean_text
 # --- CẤU HÌNH ---
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 VOCAB_SIZE = 50304
-OUTPUT_DIR = "tinyDTVi-tokenizer-v2"
+OUTPUT_DIR = "tinyDTVi-tokenizer"
 DATA_DIR = "./data" 
 TEMP_CORPUS_FILE = os.path.join(DATA_DIR, "train_corpus.txt")
 

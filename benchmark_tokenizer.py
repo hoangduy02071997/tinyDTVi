@@ -10,7 +10,7 @@ load_dotenv()
 
 # 1. Danh sách các Tokenizer cần so sánh (Cập nhật các đối thủ cùng phân khúc 500M)
 MODELS = {
-    "tinyDTVi-500M": "./tinyDTVi-tokenizer-v2",
+    "tinyDTVi-500M": "./tinyDTVi-tokenizer",
     "PhoBERT-base": "vinai/phobert-base",
     "Qwen2.5-0.5B": "Qwen/Qwen2.5-0.5B", # Đối thủ trực tiếp mạnh nhất
     "SmolLM2-360M": "HuggingFaceTB/SmolLM2-360M", # Cùng phân khúc SLM

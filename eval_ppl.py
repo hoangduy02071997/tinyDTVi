@@ -5,8 +5,8 @@ from tinyDTVi_model import TinyDTVi, TinyDTViConfig
 import os
 
 # --- CẤU HÌNH ---
-CKPT_PATH = "tinyDTVi-v1-non-moe/ckpt_best.pt" 
-TOKENIZER_PATH = "./tinyDTVi-tokenizer-v2"
+CKPT_PATH = "tinyDTVi-500M/ckpt_best.pt" 
+TOKENIZER_PATH = "./tinyDTVi-tokenizer"
 
 # Tập văn bản mẫu (Held-out) đại diện cho Wiki để đo Perplexity
 # Bạn có thể thay bằng 1 đoạn text dài khoảng 500-1000 từ tùy ý.

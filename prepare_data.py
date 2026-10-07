@@ -10,7 +10,7 @@ INPUT_TXT = "clean_corpus.txt"
 TRAIN_BIN = "train.bin"
 VAL_BIN = "val.bin"
 PROGRESS_FILE = "last_position.txt" # Lưu: byte_offset,line_count
-TOKENIZER_PATH = "./tinyDTVi-tokenizer-v2"
+TOKENIZER_PATH = "./tinyDTVi-tokenizer"
 
 # Cứ 250 dòng lấy 1 dòng cho Val (0.4% - Phù hợp file 135GB)
 VAL_EVERY_N_LINES = 200

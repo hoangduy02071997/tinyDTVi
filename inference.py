@@ -5,8 +5,8 @@ import os
 
 # --- CẤU HÌNH ---
 # Bạn sửa lại đường dẫn tới file weights (.pt) mới nhất của bạn ở đây nhé
-CKPT_PATH = "tinyDTVi-v1-non-moe/ckpt_best.pt" # SỬA DÒNG NÀY (VD: "tinyDTVi-v1-non-moe/ckpt_best.pt")
-TOKENIZER_PATH = "./tinyDTVi-tokenizer-v2"
+CKPT_PATH = "tinyDTVi-500M/ckpt_best.pt" # SỬA DÒNG NÀY (VD: "tinyDTVi-500M/ckpt_best.pt")
+TOKENIZER_PATH = "./tinyDTVi-tokenizer"
 PROMPT = "Trí tuệ nhân tạo (AI) là" # Câu mồi
 MAX_NEW_TOKENS = 50 # Số từ muốn sinh ra
 # ---------------
