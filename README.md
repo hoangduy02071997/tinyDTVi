@@ -4,8 +4,8 @@ TinyDTVi is a ~500M parameter causal language model pretrained entirely from scr
 This repository contains the core codebase for reproducing the model architecture, training loop, and data preparation pipeline.
 
 📄 **Paper:** [arXiv link coming soon]
-🤗 **Model Weights & Tokenizer:** [HuggingFace link coming soon]
-🤗 **Pretraining Dataset:** [HuggingFace link coming soon]
+🤗 **Model Weights & Tokenizer:** [hoangduy02071997/tinyDTVi](https://huggingface.co/hoangduy02071997/tinyDTVi)
+🤗 **Pretraining Dataset:** [hoangduy02071997/tinyDTVi-dataset](https://huggingface.co/datasets/hoangduy02071997/tinyDTVi-dataset)
 
 ## Architecture Highlights
 - **Base Architecture:** Decoder-only Transformer (nanoGPT-inspired)
