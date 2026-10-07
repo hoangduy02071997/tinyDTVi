@@ -5,25 +5,25 @@ from tqdm import tqdm
 import gc
 import time
 
-# --- CẤU HÌNH ---
+# --- CONFIGURATION ---
 INPUT_TXT = "clean_corpus.txt"
 TRAIN_BIN = "train.bin"
 VAL_BIN = "val.bin"
-PROGRESS_FILE = "last_position.txt" # Lưu: byte_offset,line_count
+PROGRESS_FILE = "last_position.txt" # Stores: byte_offset,line_count
 TOKENIZER_PATH = "./tinyDTVi-tokenizer"
 
-# Cứ 250 dòng lấy 1 dòng cho Val (0.4% - Phù hợp file 135GB)
+# Extract 1 line for Validation every 200 lines (0.5% - suitable for a 135GB file)
 VAL_EVERY_N_LINES = 200
 
 def stage_2_mega_file():
-    # Tắt song song hóa tầng thấp
+    # Disable low-level parallelism
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
     
-    # use_fast=False để dùng Python thuần, chậm nhưng cực kỳ ổn định cho i9-13th
+    # use_fast=False to use pure Python, slower but highly stable
     tokenizer = AutoTokenizer.from_pretrained(TOKENIZER_PATH, use_fast=False)
     eos_id = tokenizer.eos_token_id or 0
 
-    # Khôi phục tiến trình
+    # Resume progress
     start_byte = 0
     line_count = 0
     if os.path.exists(PROGRESS_FILE):
@@ -37,9 +37,9 @@ def stage_2_mega_file():
         except:
             pass
 
-    print(f"🚀 Resume tại Byte: {start_byte} | Dòng: {line_count}")
+    print(f"Resuming at Byte: {start_byte} | Line: {line_count}")
 
-    # Mở file ghi nối tiếp
+    # Open files for appending
     f_train = open(TRAIN_BIN, "ab")
     f_val = open(VAL_BIN, "ab")
 
@@ -56,12 +56,12 @@ def stage_2_mega_file():
                 text = line.strip()
                 if text:
                     try:
-                        # Tokenize đơn luồng
+                        # Single-threaded tokenization
                         ids = tokenizer.encode(text, add_special_tokens=False)
                         ids.append(eos_id)
                         arr = np.array(ids, dtype=np.uint16)
                         
-                        # Chia Val/Train
+                        # Split Train/Val
                         if line_count % VAL_EVERY_N_LINES == 0:
                             f_val.write(arr.tobytes())
                         else:
@@ -71,13 +71,13 @@ def stage_2_mega_file():
                 
                 line_count += 1
                 
-                # Cập nhật thanh tiến trình mỗi 500 dòng
+                # Update progress bar every 500 lines
                 if line_count % 500 == 0:
                     pbar.update(500)
-                    # "Hãm phanh" CPU: Nghỉ 2ms để ổn định điện áp V-core
+                    # "Throttle" CPU: Sleep for 2ms to stabilize voltage
                     time.sleep(0.002)
 
-                # Lưu Checkpoint mỗi 20.000 dòng để lỡ sập không mất công nhiều
+                # Save Checkpoint every 20,000 lines to prevent data loss on crash
                 if line_count % 20000 == 0:
                     curr_pos = f_in.tell()
                     with open(PROGRESS_FILE, "w") as f_prog:
@@ -87,13 +87,13 @@ def stage_2_mega_file():
                     gc.collect()
 
     except Exception as e:
-        print(f"\n❌ Lỗi hệ thống tại dòng {line_count}: {e}")
-        # Trả về mã lỗi 1 để file Bash biết và chạy lại
+        print(f"\nSystem error at line {line_count}: {e}")
+        # Return error code 1 for Bash script to restart
         exit(1)
     finally:
         f_train.close()
         f_val.close()
-        print(f"\n✅ Đã đóng file. Tiến trình hiện tại: Dòng {line_count}")
+        print(f"\nFiles closed. Current progress: Line {line_count}")
 
 if __name__ == "__main__":
     stage_2_mega_file()

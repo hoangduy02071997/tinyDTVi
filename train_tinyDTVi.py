@@ -11,7 +11,7 @@ from tinyDTVi_model import TinyDTViConfig, TinyDTVi
 from transformers import AutoTokenizer
 
 
-# --- THIẾT LẬP HỆ THỐNG CHỐNG CRASH ---
+# --- SYSTEM CONFIGURATION ---
 import os
 os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True,max_split_size_mb:64'
 
@@ -21,9 +21,9 @@ eval_interval = 250
 log_interval = 1
 eval_iters = 200
 always_save_checkpoint = True
-save_interval = 100 # Tăng lên 100 để tránh nghẽn I/O ổ cứng
+save_interval = 100 # Increased to 100 to avoid I/O bottlenecks
 
-# Tự động Resume
+# Auto Resume
 ckpt_files = glob.glob(os.path.join(out_dir, 'ckpt_*.pt'))
 ckpt_iters = []
 for f in ckpt_files:
@@ -36,9 +36,9 @@ for f in ckpt_files:
 ckpt_iters.sort(key=lambda x: x[1], reverse=True)
 init_from = 'resume' if len(ckpt_iters) > 0 else 'scratch'
 
-# Model Config từ file model.py
+# Model Config from model.py
 from tinyDTVi_model import TinyDTViConfig
-config = TinyDTViConfig() # Lấy n_layer=24, n_embd=1088 từ đây
+config = TinyDTViConfig() # Getting n_layer=24, n_embd=1088 from here
 n_layer = config.n_layer
 n_head = config.n_head
 n_embd = config.n_embd
@@ -69,7 +69,7 @@ compile = False
 os.makedirs(out_dir, exist_ok=True)
 log_file = os.path.join(out_dir, 'loss_log.csv')
 
-# Khởi tạo file log thông minh
+# Initialize log file
 if not os.path.exists(log_file):
     with open(log_file, 'w', newline='') as f:
         writer = csv.writer(f)
@@ -91,7 +91,7 @@ def get_batch(split):
     ix = torch.randint(len(data) - block_size, (batch_size,))
     x = torch.stack([torch.from_numpy((data[i:i+block_size]).astype(np.int64)) for i in ix])
     y = torch.stack([torch.from_numpy((data[i+1:i+block_size+1]).astype(np.int64)) for i in ix])
-    # Không dùng pin_memory nếu hay bị Segfault trên Ubuntu 24.04
+    # Avoid using pin_memory to prevent Segfaults on Ubuntu 24.04
     x, y = x.to(device, non_blocking=True), y.to(device, non_blocking=True)
     return x, y
 
@@ -100,17 +100,17 @@ iter_num = 0
 best_val_loss = 1e9
 
 if init_from == 'scratch':
-    print("🚀 Init TinyDTVi-500M model from scratch...")
+    print("Init TinyDTVi-500M model from scratch...")
     model = TinyDTVi(config)
 else:
     loaded = False
     for ckpt_path, it in ckpt_iters:
-        print(f"🔄 Attempting to resume from {ckpt_path}...")
+        print(f"Attempting to resume from {ckpt_path}...")
         try:
             checkpoint = torch.load(ckpt_path, map_location='cpu')
             model = TinyDTVi(TinyDTViConfig(**checkpoint['model_args']))
             state_dict = checkpoint['model']
-            # Fix prefix nếu đã từng compile
+            # Fix prefix if the model was compiled previously
             unwanted_prefix = '_orig_mod.'
             for k,v in list(state_dict.items()):
                 if k.startswith(unwanted_prefix):
@@ -119,7 +119,7 @@ else:
             iter_num = checkpoint['iter_num']
             best_val_loss = checkpoint['best_val_loss']
             
-            # --- NEW: Khôi phục RNG state ---
+            # --- NEW: Restore RNG state ---
             if 'rng_state' in checkpoint:
                 torch.set_rng_state(checkpoint['rng_state'])
             if 'cuda_rng_state' in checkpoint:
@@ -130,22 +130,22 @@ else:
             loaded = True
             break
         except Exception as e:
-            print(f"⚠️ Failed to load {ckpt_path}: {e}")
+            print(f"Failed to load {ckpt_path}: {e}")
             # Do NOT delete the file if it's a memory error
             if "memory" in str(e).lower() or "oom" in str(e).lower():
-                print("🛑 Memory error detected. Halting resume process to protect checkpoints.")
+                print("Memory error detected. Halting resume process to protect checkpoints.")
                 break
             
             import os
             try:
                 os.remove(ckpt_path)
-                print(f"🗑️ Deleted corrupted file {ckpt_path}")
+                print(f"Deleted corrupted file {ckpt_path}")
             except:
                 pass
             continue
     
     if not loaded:
-        print("❌ All checkpoints corrupted or failed to load. Starting from scratch...")
+        print("All checkpoints corrupted or failed to load. Starting from scratch...")
         model = TinyDTVi(config)
         init_from = 'scratch'
 
@@ -157,7 +157,7 @@ tokenizer = AutoTokenizer.from_pretrained("./tinyDTVi-tokenizer")
 
 
 
-# --- KỸ THUẬT TIẾT KIỆM VRAM CHỦ CHỐT ---
+# --- CORE VRAM OPTIMIZATION TECHNIQUES ---
 # 1. Gradient Checkpointing
 if hasattr(model, 'gradient_checkpointing_enable'):
     model.gradient_checkpointing_enable()
@@ -165,7 +165,7 @@ if hasattr(model, 'gradient_checkpointing_enable'):
 # 2. Optimizer 8-bit
 try:
     import bitsandbytes as bnb
-    print("💎 Using 8-bit AdamW...")
+    print("Using 8-bit AdamW...")
     param_dict = {pn: p for pn, p in model.named_parameters() if p.requires_grad}
     decay_params = [p for n, p in param_dict.items() if p.dim() >= 2]
     nodecay_params = [p for n, p in param_dict.items() if p.dim() < 2]
@@ -173,7 +173,7 @@ try:
                     {'params': nodecay_params, 'weight_decay': 0.0}]
     optimizer = bnb.optim.AdamW8bit(optim_groups, lr=learning_rate, betas=(beta1, beta2))
 except:
-    print("⚠️ bitsandbytes fallback...")
+    print("bitsandbytes fallback...")
     optimizer = model.configure_optimizers(weight_decay, learning_rate, (beta1, beta2), 'cuda')
 
 if init_from == 'resume':
@@ -202,8 +202,8 @@ def get_lr(it):
     coeff = 0.5 * (1.0 + math.cos(math.pi * decay_ratio))
     return min_lr + coeff * (learning_rate - min_lr)
 
-# Vòng lặp chính
-print("🔥 Training started...")
+# Main Training Loop
+print("Training started...")
 X, Y = get_batch('train')
 t0 = time.time()
 
@@ -217,17 +217,17 @@ while iter_num <= max_iters:
         losses = estimate_loss()
         print(f"Step {iter_num}: train {losses['train']:.4f}, val {losses['val']:.4f}")
         
-        # --- HIỂN THỊ DỰ ĐOÁN VÀ LABEL ---
+        # --- DISPLAY PREDICTIONS AND LABELS ---
         model.eval()
         
-        # Lấy một mẫu thực tế từ tập Validation
+        # Get a real sample from Validation set
         x_samp, y_samp = get_batch('val')
         
-        # 1. Ground Truth: Nội dung gốc của đoạn văn mẫu (dùng x_samp để lấy đủ ngữ cảnh)
+        # 1. Ground Truth: Original content of the sample (using x_samp to get full context)
         y_ground_truth = tokenizer.decode(x_samp[0].tolist(), skip_special_tokens=True)
         
-        # 2. AI Prediction: Model lấy một đoạn đầu làm prompt và tự viết tiếp
-        # Ví dụ lấy 32 token đầu tiên làm "phần mồi"
+        # 2. AI Prediction: Model uses the initial prefix as a prompt and generates the rest
+        # Example: taking the first 32 tokens as the "prompt"
         prompt_len = 32 if block_size > 32 else block_size // 2
         x_prompt = x_samp[0:1, :prompt_len]
         with ctx:
@@ -276,7 +276,7 @@ while iter_num <= max_iters:
         t0 = t1
         print(f"iter {iter_num}: loss {loss.item()*gradient_accumulation_steps:.4f}, time {dt*1000:.2f}ms, lr {lr:e}")
 
-    # Periodic Save (Tránh crash mất công)
+    # Periodic Save (Prevent data loss on crash)
     if iter_num % save_interval == 0:
         ckpt = {
             'model': model.state_dict(),

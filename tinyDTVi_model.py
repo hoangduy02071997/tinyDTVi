@@ -15,7 +15,7 @@ import torch.nn as nn
 from torch.nn import functional as F
 from dataclasses import dataclass
 
-# --- 1. RMSNorm (DeepSeek/Llama chuẩn) ---
+# --- 1. RMSNorm (Standard DeepSeek/Llama implementation) ---
 class RMSNorm(nn.Module):
     def __init__(self, dim, eps=1e-6):
         super().__init__()
@@ -28,7 +28,7 @@ class RMSNorm(nn.Module):
     def forward(self, x):
         return self.weight * self._norm(x).type_as(x)
 
-# --- 2. RoPE Helpers (Hàm hỗ trợ xoay vector) ---
+# --- 2. RoPE Helpers (Vector rotation utilities) ---
 def precompute_freqs_cis(dim: int, end: int, theta: float = 10000.0):
     freqs = 1.0 / (theta ** (torch.arange(0, dim, 2)[: (dim // 2)].float() / dim))
     t = torch.arange(end, device=freqs.device)
@@ -37,33 +37,33 @@ def precompute_freqs_cis(dim: int, end: int, theta: float = 10000.0):
     return freqs_cis
 
 def apply_rotary_emb(xq, xk, freqs_cis):
-    # Sử dụng float32 cho RoPE tính toán chính xác, nhưng cast lại ngay lập tức
+    # Use float32 for accurate RoPE computation, but cast back immediately
     xq_ = torch.view_as_complex(xq.float().reshape(*xq.shape[:-1], -1, 2))
     xk_ = torch.view_as_complex(xk.float().reshape(*xk.shape[:-1], -1, 2))
     
     # Broadcast freqs_cis
     freqs_cis = freqs_cis.view(1, xq_.size(1), 1, xq_.size(3))
     
-    # Nhân số phức và convert ngược lại float ban đầu (thường là bfloat16)
+    # Multiply complex numbers and convert back to original float (typically bfloat16)
     xq_out = torch.view_as_real(xq_ * freqs_cis).flatten(3).to(xq.dtype)
     xk_out = torch.view_as_real(xk_ * freqs_cis).flatten(3).to(xk.dtype)
     return xq_out, xk_out
 
-# --- 3. SwiGLU MLP (Cải tiến từ MLP cũ) ---
+# --- 3. SwiGLU MLP (Improved from standard MLP) ---
 class SwiGLUMLP(nn.Module):
     def __init__(self, config):
         super().__init__()
-        # SwiGLU cần 3 ma trận thay vì 2
+        # SwiGLU requires 3 matrices instead of 2
         self.w1 = nn.Linear(config.n_embd, 4 * config.n_embd, bias=False)
         self.w2 = nn.Linear(4 * config.n_embd, config.n_embd, bias=False)
         self.w3 = nn.Linear(config.n_embd, 4 * config.n_embd, bias=False)
         self.dropout = nn.Dropout(config.dropout)
 
     def forward(self, x):
-        # Công thức: SwiGLU(x) = (Swish(xW1) * xW3)W2
+        # Formula: SwiGLU(x) = (Swish(xW1) * xW3)W2
         return self.dropout(self.w2(F.silu(self.w1(x)) * self.w3(x)))
 
-# --- 4. Attention nâng cấp với RoPE ---
+# --- 4. Upgraded Attention with RoPE ---
 class CausalSelfAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -83,7 +83,7 @@ class CausalSelfAttention(nn.Module):
         xk = xk.view(B, T, self.n_head, C // self.n_head)
         xv = xv.view(B, T, self.n_head, C // self.n_head)
 
-        # Áp dụng RoPE
+        # Apply RoPE
         xq, xk = apply_rotary_emb(xq, xk, freqs_cis)
 
         xq = xq.transpose(1, 2)
@@ -99,7 +99,7 @@ class CausalSelfAttention(nn.Module):
         y = y.transpose(1, 2).contiguous().view(B, T, C)
         return self.wo(y)
 
-# --- 5. Lắp ráp Model hoàn chỉnh ---
+# --- 5. Complete Model Assembly ---
 class Block(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -141,7 +141,7 @@ class TinyDTVi(nn.Module):
         B, T = idx.size()
         x = self.transformer.wte(idx)
         
-        # Lấy freqs_cis tương ứng với độ dài chuỗi hiện tại
+        # Retrieve freqs_cis corresponding to the current sequence length
         freqs_cis = self.freqs_cis[:T].to(idx.device)
 
         # Check for gradient checkpointing (usually enabled during training for large models)
@@ -156,10 +156,10 @@ class TinyDTVi(nn.Module):
         x = self.transformer.ln_f(x)
 
         if targets is not None:
-            # Tối ưu: Tính loss trực tiếp từ projection để tránh lưu trữ ma trận Logits khổng lồ (B, T, Vocab)
+            # Optimization: Calculate loss directly from projection to avoid storing massive Logits matrix (B, T, Vocab)
             logits = self.lm_head(x)
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1), ignore_index=-1)
-            # Trả về logits=None trong khi train để tiết kiệm VRAM
+            # Return logits=None during training to save VRAM
             return None, loss
         else:
             logits = self.lm_head(x[:, [-1], :])

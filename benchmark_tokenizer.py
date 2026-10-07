@@ -5,30 +5,30 @@ import numpy as np
 import os
 from dotenv import load_dotenv
 
-# Load môi trường (HF_TOKEN) để tránh warning khi tải model
+# Load environment variables (HF_TOKEN) to prevent warnings when downloading models
 load_dotenv()
 
-# 1. Danh sách các Tokenizer cần so sánh (Cập nhật các đối thủ cùng phân khúc 500M)
+# 1. List of Tokenizers to compare (Updated with 500M class competitors)
 MODELS = {
     "tinyDTVi-500M": "./tinyDTVi-tokenizer",
     "PhoBERT-base": "vinai/phobert-base",
-    "Qwen2.5-0.5B": "Qwen/Qwen2.5-0.5B", # Đối thủ trực tiếp mạnh nhất
-    "SmolLM2-360M": "HuggingFaceTB/SmolLM2-360M", # Cùng phân khúc SLM
-    "Llama-3-8B (Mirror)": "unsloth/llama-3-8b-bnb-4bit", # Bản mirror để tránh lỗi 403
-    "Llama-2-7B (Mirror)": "daryl149/llama-2-7b-hf", # Bản mirror Llama-2 gốc
-    "GPT-4": "gpt4", # Xử lý qua tiktoken
+    "Qwen2.5-0.5B": "Qwen/Qwen2.5-0.5B", # Strongest direct competitor
+    "SmolLM2-360M": "HuggingFaceTB/SmolLM2-360M", # Same SLM segment
+    "Llama-3-8B (Mirror)": "unsloth/llama-3-8b-bnb-4bit", # Mirror to avoid 403 errors
+    "Llama-2-7B (Mirror)": "daryl149/llama-2-7b-hf", # Original Llama-2 mirror
+    "GPT-4": "gpt4", # Processed via tiktoken
     "ViGPT-2 (7B)": "bkai-foundation-models/vietnamese-llama-2-7b-120gb",
 }
 
 def get_fertility(tokenizer_name, path, texts):
-    # Xử lý GPT-4 riêng biệt qua tiktoken
+    # Handle GPT-4 separately via tiktoken
     if tokenizer_name == "GPT-4":
         enc = tiktoken.get_encoding("cl100k_base")
         encode_fn = lambda x: enc.encode(x)
     else:
-        # Sử dụng trust_remote_code=True cho một số tokenizer đặc thù
+        # Use trust_remote_code=True for certain specific tokenizers
         tokenizer = AutoTokenizer.from_pretrained(path, trust_remote_code=True)
-        # add_special_tokens=False để đo lường độ nén văn bản thuần túy
+        # add_special_tokens=False to measure pure text compression
         encode_fn = lambda x: tokenizer.encode(x, add_special_tokens=False)
 
     total_tokens = 0
@@ -45,23 +45,16 @@ def get_fertility(tokenizer_name, path, texts):
         total_chars += len(t)
         
     fertility = total_tokens / total_words
-    bytes_per_token = total_chars / total_tokens # Thêm chỉ số byte mỗi token cho Paper
+    bytes_per_token = total_chars / total_tokens # Add chars per token metric for Paper
     return fertility, bytes_per_token
 
-# 2. Tập dữ liệu Benchmark (Dùng các câu Tiếng Việt đa dạng văn phong)
-# test_sentences = [
-#     "Trí tuệ nhân tạo đang thay đổi cách chúng ta làm việc hằng ngày.",
-#     "Trường Đại học Bách khoa Hà Nội là một trong những ngôi trường kỹ thuật hàng đầu.",
-#     "Sáng nay, chính phủ đã ban hành nghị định mới về phát triển kinh tế số.",
-#     "Công thức toán học cơ bản bao gồm cộng, trừ, nhân và chia.",
-#     "Sầu riêng là loại trái cây đặc sản của vùng đồng bằng sông Cửu Long." # Thêm thực thể VN
-# ]
+# 2. Benchmark Dataset (Using diverse Vietnamese sentences)
 test_sentences = [
-    # --- Tiếng Việt Học thuật & Tin tức ---
+    # --- Academic & News Vietnamese ---
     "Trí tuệ nhân tạo đang tái định nghĩa cấu trúc kinh tế toàn cầu trong kỷ nguyên số.",
     "Đại học Quốc gia Hà Nội khẳng định vị thế trong bảng xếp hạng các trường đại học hàng đầu thế giới.",
     
-    # --- Tiếng Việt Đời thường (CulturaX style) ---
+    # --- Daily Vietnamese (CulturaX style) ---
     "Sáng nay mình đi ăn bát phở Thìn mà thấy hương vị vẫn đậm đà như ngày đầu mới ăn vậy.",
     "Bạn có khỏe không? Hôm qua mình thấy bạn có vẻ mệt mỏi khi đến lớp học của thầy Peter.",
 
@@ -69,14 +62,14 @@ test_sentences = [
     "Trường Đại học Bách khoa Hà Nội là một trong những ngôi trường kỹ thuật hàng đầu.",
     "Sáng nay, chính phủ đã ban hành nghị định mới về phát triển kinh tế số.",
     "Công thức toán học cơ bản bao gồm cộng, trừ, nhân và chia.",
-    "Sầu riêng là loại trái cây đặc sản của vùng đồng bằng sông Cửu Long.", # Thêm thực thể VN
+    "Sầu riêng là loại trái cây đặc sản của vùng đồng bằng sông Cửu Long.", # Added VN entity
 
-    # --- Tiếng Anh Chuẩn (Để so sánh với Llama/GPT) ---
+    # --- Standard English (To compare with Llama/GPT) ---
     # "Artificial Intelligence is fundamentally reshaping the global economic landscape in the digital era.",
     # "Are you okay? You looked quite unwell when you arrived at Peter's class yesterday.",
     # "This is for you; I am truly happy about it because I love you so much, brother.",
 
-    # --- Toán học & Mã nguồn (Kiểm tra khả năng nén ký tự đặc biệt) ---
+    # --- Math & Code (Check special character compression) ---
     # "The quadratic formula is defined as x = (-b ± sqrt(b^2 - 4ac)) / 2a.",
     # "def factorial(n): return 1 if n == 0 else n * factorial(n-1)"
 ]
@@ -91,11 +84,11 @@ for name, path in MODELS.items():
         print(f"{name:<20} | {fertility:.4f}      | {cpt:.2f}")
         results.append((name, fertility))
     except Exception as e:
-        print(f"{name:<20} | Lỗi: {str(e)[:30]}...")
+        print(f"{name:<20} | Error: {str(e)[:30]}...")
 
-# 3. Gợi ý đánh giá cho Paper
+# 3. Evaluation suggestions for Paper
 if results:
     ours = [r[1] for r in results if "tinyDTVi" in r[0]][0]
     qwen = [r[1] for r in results if "Qwen" in r[0]][0]
     improvement = ((qwen - ours) / qwen) * 100
-    print(f"\n💡 Note cho Arxiv: tinyDTVi nén tốt hơn Qwen2.5 khoảng {improvement:.2f}%")
+    print(f"\nNote for Arxiv: tinyDTVi compresses approximately {improvement:.2f}% better than Qwen2.5")
