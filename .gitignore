@@ -1,0 +1,29 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Mac OS
+.DS_Store
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Hugging Face local cache (Just in case)
+.huggingface/
+
+# PyTorch checkpoints (We don't want to accidentally push giant weights to Github)
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.ckpt
+
+# Log files
+*.log

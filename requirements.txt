@@ -1,0 +1,11 @@
+numpy
+tokenizers
+transformers
+datasets
+tqdm
+tiktoken
+python-dotenv
+pyarrow
+matplotlib
+bitsandbytes
+diskcache
