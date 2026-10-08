@@ -64,7 +64,7 @@ If you use this codebase or model in your research, please cite our paper:
 ```bibtex
 @article{tinyDTVi2026,
   title={TinyDTVi: Pretraining a Compact Vietnamese Language Model from Scratch Under Consumer-Grade Constraints},
-  author={Hoang, Duy and Nguyen, Duy Tam Hoang},
+  author={Duy Hoang and Duy Tam Hoang Nguyen},
   year={2026}
 }
 ```
