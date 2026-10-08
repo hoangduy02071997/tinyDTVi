@@ -21,7 +21,7 @@ This repository contains the core codebase for reproducing the model architectur
 🤗 **Pretraining Dataset:** [hoangduy02071997/tinyDTVi-dataset](https://huggingface.co/datasets/hoangduy02071997/tinyDTVi-dataset)
 
 ## Architecture Highlights
-![TinyDTVi Architecture](architecture.png)
+![TinyDTVi Architecture](architecture.gif)
 
 - **Base Architecture:** Decoder-only Transformer (nanoGPT-inspired)
 - **Parameters:** ~509 Million
