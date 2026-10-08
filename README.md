@@ -1,5 +1,18 @@
-# TinyDTVi-500M: Pretraining a Compact Vietnamese Language Model from Scratch
+---
+language: 
+  - vi
+license: mit
+library_name: pytorch
+tags:
+  - vietnamese
+  - causal-lm
+  - language-model
+  - custom-architecture
+datasets:
+  - hoangduy02071997/tinyDTVi-dataset
+---
 
+# TinyDTVi-500M: Pretraining a Compact Vietnamese Language Model from Scratch
 TinyDTVi is a ~500M parameter causal language model pretrained entirely from scratch on a single consumer-grade GPU (NVIDIA RTX 3080 12GB). 
 This repository contains the core codebase for reproducing the model architecture, training loop, and data preparation pipeline.
 
@@ -8,6 +21,8 @@ This repository contains the core codebase for reproducing the model architectur
 🤗 **Pretraining Dataset:** [hoangduy02071997/tinyDTVi-dataset](https://huggingface.co/datasets/hoangduy02071997/tinyDTVi-dataset)
 
 ## Architecture Highlights
+![TinyDTVi Architecture](architecture.png)
+
 - **Base Architecture:** Decoder-only Transformer (nanoGPT-inspired)
 - **Parameters:** ~509 Million
 - **Layers:** 24 | **Heads:** 16 | **Embed Dim:** 1088

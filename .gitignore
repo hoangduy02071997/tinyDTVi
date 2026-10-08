@@ -27,3 +27,4 @@ venv.bak/
 
 # Log files
 *.log
+.git_backup/
