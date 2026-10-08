@@ -47,20 +47,27 @@ def get_fertility(tokenizer_name, path, texts):
     bytes_per_token = total_chars / total_tokens # Add chars per token metric for Paper
     return fertility, bytes_per_token
 
-# 2. Benchmark Dataset (10,000 sentences from CulturaX to match paper claims)
-print("Loading 10,000 sentences from CulturaX...")
+# 2. Benchmark Dataset (10,000 documents from CulturaX to match paper claims)
+print("Loading 10,000 documents from CulturaX...")
 try:
     from datasets import load_dataset
+    import sys
+    import os
+    # Ensure clean_utils is accessible
+    sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+    from clean_utils import clean_text
+    
     # Stream the dataset to avoid downloading the massive CulturaX corpus
     ds = load_dataset("uonlp/CulturaX", "vi", split="train", streaming=True)
     test_sentences = []
     for row in ds:
-        text = row["text"].strip()
-        if len(text) > 50: # Only take reasonable length sentences
-            test_sentences.append(text)
+        # Apply the exact same cleaning pipeline used for pretraining
+        cleaned_text = clean_text(row["text"])
+        if len(cleaned_text) > 50: 
+            test_sentences.append(cleaned_text)
         if len(test_sentences) >= 10000:
             break
-    print("Successfully loaded 10,000 sentences.")
+    print("Successfully loaded 10,000 cleaned documents.")
 except Exception as e:
     print(f"Warning: Failed to load CulturaX directly from HuggingFace ({e}). Falling back to dummy text.")
     # Fallback to a few sentences just to keep the script runnable without internet/HF

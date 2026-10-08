@@ -12,6 +12,9 @@ MAX_NEW_TOKENS = 50 # Number of tokens to generate
 # ---------------
 
 def main():
+    torch.manual_seed(1337)
+    torch.cuda.manual_seed(1337)
+
     if not os.path.exists(CKPT_PATH):
         print(f"Error: Weights file not found at: {CKPT_PATH}")
         print("Please update the CKPT_PATH variable in the code (line 8) to point to your .pt file.")

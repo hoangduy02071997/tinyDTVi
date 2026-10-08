@@ -49,8 +49,19 @@ def main():
     model.to(device)
     model.eval()
 
+    import sys
+    # Ensure clean_utils is accessible
+    sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+    from clean_utils import clean_text
+    EVAL_TEXT = clean_text(EVAL_TEXT)
+
     # 2. Tokenize data (Create input_ids and targets)
     input_ids = tokenizer.encode(EVAL_TEXT, return_tensors='pt').to(device)
+    
+    # Strictly limit to 1024 tokens to avoid RoPE crash
+    MAX_TOKENS = 1024
+    if input_ids.size(1) > MAX_TOKENS:
+        input_ids = input_ids[:, :MAX_TOKENS]
     
     # Shift input_ids to create x (input) and y (target)
     x = input_ids[:, :-1]
