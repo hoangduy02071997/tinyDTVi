@@ -57,9 +57,18 @@ To run text generation using the pretrained model:
 python inference.py
 ```
 
-## Training Setup
-We successfully trained this model on a single RTX 3080 (12GB VRAM). The training heavily relies on memory-bound optimizations. To reproduce the training environment, we recommend using Docker with PyTorch 2.1.2.
-For detailed hardware configurations, please refer to Section 5.1 of our paper.
+## Training & Environment Setup
+We successfully trained this model on a single RTX 3080 (12GB VRAM). The training heavily relies on memory-bound optimizations. To reproduce the exact training and evaluation environment as described in Section 5.1 of our paper, use Docker with PyTorch 2.1.2:
+
+```bash
+# Build the Docker image
+docker build -t tinydtvi .
+
+# Launch the container with GPU support and 16GB shared memory
+docker run --gpus all -it --ipc=host --shm-size=16g -v $(pwd):/workspace -w /workspace tinydtvi
+```
+
+For hardware configurations and ablation studies, please refer to Section 5.1 of our paper.
 
 ## Citation
 If you use this codebase or model in your research, please cite our paper:
