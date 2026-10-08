@@ -37,11 +37,12 @@ This repository contains the core codebase for reproducing the model architectur
 ## Repository Structure
 - `tinyDTVi_model.py`: Model architecture definition (Transformer, Blocks, Attention with RoPE, SwiGLU).
 - `train_tinyDTVi.py`: The main pretraining loop featuring 8-bit AdamW, Gradient Checkpointing, and bfloat16 mixed precision.
-- `cleanup_v2.py` & `clean_utils.py`: The aggressive whitelist-based data filtering and exact-match deduplication pipeline used to process over 200GB of raw text.
+- `cleanup_v2.py` & `clean_utils.py`: The aggressive whitelist-based data filtering and bounded prefix-based deduplication pipeline used to process over 200GB of raw text.
 - `prepare_data.py`: Script to tokenize the cleaned 134GB text corpus into binary format (`train.bin`, `val.bin`) for training.
 - `train_tokenizer.py`: Script to train our custom highly-compressed 50,304-token Vietnamese Byte-Pair Encoding (BPE) tokenizer.
 - `benchmark_tokenizer.py`: Script evaluating tokenizer compression efficiency against multilingual models (Qwen2.5, Llama-3, etc.).
 - `eval_ppl.py`: Validation script to measure Perplexity (PPL) on held-out data.
+- `benchmark_bpc.py`: Script to compute Bits-Per-Character (BPC) on the XQuAD dataset for language modeling evaluation.
 - `inference.py`: Script for qualitative text generation (Top-k sampling).
 
 ## Quick Start (Inference)

@@ -11,7 +11,7 @@ TOKENIZER_PATH = "./tinyDTVi-tokenizer"
 print("Loading Wikipedia (Held-out) dataset...")
 try:
     from datasets import load_dataset
-    ds = load_dataset("wikimedia/wikipedia", "20231101.vi", split="train", streaming=True)
+    ds = load_dataset("wikimedia/wikipedia", "20240101.vi", split="train", streaming=True)
     wiki_texts = []
     # Skip first 1000 to avoid train-set contamination if possible, grab next 10 articles
     iterator = iter(ds)
