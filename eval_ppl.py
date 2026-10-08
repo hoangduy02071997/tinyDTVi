@@ -4,26 +4,35 @@ from transformers import AutoTokenizer
 from tinyDTVi_model import TinyDTVi, TinyDTViConfig
 import os
 
-# --- CONFIGURATION ---
 CKPT_PATH = "tinyDTVi-500M/ckpt_best.pt" 
 TOKENIZER_PATH = "./tinyDTVi-tokenizer"
 
-# Held-out sample text representing Wikipedia to measure Perplexity
-# You can replace this with any long text of about 500-1000 words.
-EVAL_TEXT = """Trí tuệ nhân tạo (tiếng Anh: artificial intelligence, hay máy tính thông minh) là trí tuệ được biểu diễn bởi bất kỳ một hệ thống nhân tạo nào. Thuật ngữ này thường dùng để nói đến các máy tính có mục đích không nhất định và ngành khoa học nghiên cứu về các lý thuyết và ứng dụng của trí tuệ nhân tạo.
-Mặc dù trí tuệ nhân tạo có ý nghĩa rộng như là trí thông minh trong các tác phẩm khoa học viễn tưởng, nó là một trong những ngành trọng yếu của tin học. Trí tuệ nhân tạo liên quan đến cách cư xử, sự học hỏi và khả năng thích ứng thông minh của máy móc. 
-Nghiên cứu về trí tuệ nhân tạo nhằm mục đích tạo ra các hệ thống máy tính có khả năng thực hiện các công việc đòi hỏi trí thông minh của con người. Các ví dụ bao gồm nhận dạng giọng nói, thị giác máy tính, dịch ngôn ngữ tự nhiên và ra quyết định chuyên gia."""
-# ---------------
+# Load Wikipedia held-out sample via HuggingFace
+print("Loading Wikipedia (Held-out) dataset...")
+try:
+    from datasets import load_dataset
+    ds = load_dataset("wikimedia/wikipedia", "20231101.vi", split="train", streaming=True)
+    wiki_texts = []
+    # Skip first 1000 to avoid train-set contamination if possible, grab next 10 articles
+    iterator = iter(ds)
+    for _ in range(1000): next(iterator)
+    for _ in range(10):
+        wiki_texts.append(next(iterator)["text"])
+    EVAL_TEXT = "\n".join(wiki_texts)[:10000] # Use a large 10k char chunk
+    print("Successfully loaded Wikipedia sample.")
+except Exception as e:
+    print(f"Error loading Wiki: {e}. Please install datasets library.")
+    exit(1)
 
 def main():
     if not os.path.exists(CKPT_PATH):
-        print(f"Error: Could not find {CKPT_PATH}")
+        print(f"Error: Cannot find {CKPT_PATH}")
         return
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     
     # 1. Load Tokenizer & Model
-    print("Loading Tokenizer & Model to calculate Perplexity...")
+    print("Loading Tokenizer ⏳ Đang nạp Tokenizer & Model để tính Perplexity... Model for Perplexity calculation...")
     tokenizer = AutoTokenizer.from_pretrained(TOKENIZER_PATH)
     checkpoint = torch.load(CKPT_PATH, map_location=device)
     
@@ -43,13 +52,13 @@ def main():
     # 2. Tokenize data (Create input_ids and targets)
     input_ids = tokenizer.encode(EVAL_TEXT, return_tensors='pt').to(device)
     
-    # Shift input_ids to create x (input) and y (target - next token)
+    # Shift input_ids to create x (input) and y (target)
     x = input_ids[:, :-1]
     y = input_ids[:, 1:]
     
-    print(f"Test segment length: {x.size(1)} tokens.")
+    print(f"Test sequence length: {x.size(1)} tokens.")
 
-    # 3. Calculate Loss & Perplexity
+    # 3. Calculate Loss 3. Tính Loss & Perplexity Perplexity
     with torch.no_grad():
         logits, loss = model(x, y)
         

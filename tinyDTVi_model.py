@@ -120,7 +120,7 @@ class TinyDTViConfig:
     n_layer: int = 24
     n_embd: int = 1088
     n_head: int = 16
-    dropout: float = 0.0
+    dropout: float = 0.1
 
 class TinyDTVi(nn.Module):
     def __init__(self, config):
@@ -136,6 +136,20 @@ class TinyDTVi(nn.Module):
 
         # Precompute RoPE frequencies
         self.freqs_cis = precompute_freqs_cis(config.n_embd // config.n_head, config.block_size)
+        
+        # Initialize weights
+        self.apply(self._init_weights)
+
+    def _init_weights(self, module):
+        if isinstance(module, nn.Linear):
+            torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
+            if module.bias is not None:
+                torch.nn.init.zeros_(module.bias)
+        elif isinstance(module, nn.Embedding):
+            torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
+
+    def gradient_checkpointing_enable(self):
+        self.gradient_checkpointing = True
 
     def forward(self, idx, targets=None):
         B, T = idx.size()

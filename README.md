@@ -16,9 +16,9 @@ datasets:
 TinyDTVi is a ~500M parameter causal language model pretrained entirely from scratch on a single consumer-grade GPU (NVIDIA RTX 3080 12GB). 
 This repository contains the core codebase for reproducing the model architecture, training loop, and data preparation pipeline.
 
-📄 **Paper:** [arXiv link coming soon]
-🤗 **Model Weights & Tokenizer:** [hoangduy02071997/tinyDTVi](https://huggingface.co/hoangduy02071997/tinyDTVi)
-🤗 **Pretraining Dataset:** [hoangduy02071997/tinyDTVi-dataset](https://huggingface.co/datasets/hoangduy02071997/tinyDTVi-dataset)
+**Paper:** [arXiv link coming soon]
+**Model Weights (283,200 steps):** [hoangduy02071997/tinyDTVi](https://huggingface.co/hoangduy02071997/tinyDTVi)
+**Pretraining Dataset:** [hoangduy02071997/tinyDTVi-dataset](https://huggingface.co/datasets/hoangduy02071997/tinyDTVi-dataset)
 
 ## Architecture Highlights
 ![TinyDTVi Architecture](architecture.gif)
@@ -37,7 +37,8 @@ This repository contains the core codebase for reproducing the model architectur
 ## Repository Structure
 - `tinyDTVi_model.py`: Model architecture definition (Transformer, Blocks, Attention with RoPE, SwiGLU).
 - `train_tinyDTVi.py`: The main pretraining loop featuring 8-bit AdamW, Gradient Checkpointing, and bfloat16 mixed precision.
-- `prepare_data.py`: The aggressive whitelist-based data filtering pipeline used to process 135GB of raw Vietnamese text.
+- `cleanup_v2.py` & `clean_utils.py`: The aggressive whitelist-based data filtering and exact-match deduplication pipeline used to process over 200GB of raw text.
+- `prepare_data.py`: Script to tokenize the cleaned 134GB text corpus into binary format (`train.bin`, `val.bin`) for training.
 - `train_tokenizer.py`: Script to train our custom highly-compressed 50,304-token Vietnamese Byte-Pair Encoding (BPE) tokenizer.
 - `benchmark_tokenizer.py`: Script evaluating tokenizer compression efficiency against multilingual models (Qwen2.5, Llama-3, etc.).
 - `eval_ppl.py`: Validation script to measure Perplexity (PPL) on held-out data.
@@ -57,7 +58,7 @@ python inference.py
 
 ## Training Setup
 We successfully trained this model on a single RTX 3080 (12GB VRAM). The training heavily relies on memory-bound optimizations. To reproduce the training environment, we recommend using Docker with PyTorch 2.1.2.
-For detailed hardware configurations, please refer to Section 4 of our paper.
+For detailed hardware configurations, please refer to Section 5.1 of our paper.
 
 ## Citation
 If you use this codebase or model in your research, please cite our paper:

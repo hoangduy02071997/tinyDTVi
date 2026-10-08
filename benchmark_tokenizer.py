@@ -8,16 +8,15 @@ from dotenv import load_dotenv
 # Load environment variables (HF_TOKEN) to prevent warnings when downloading models
 load_dotenv()
 
-# 1. List of Tokenizers to compare (Updated with 500M class competitors)
+# 1. List of Tokenizers to compare (Exactly matching Table 1 of the paper)
 MODELS = {
-    "tinyDTVi-500M": "./tinyDTVi-tokenizer",
-    "PhoBERT-base": "vinai/phobert-base",
-    "Qwen2.5-0.5B": "Qwen/Qwen2.5-0.5B", # Strongest direct competitor
-    "SmolLM2-360M": "HuggingFaceTB/SmolLM2-360M", # Same SLM segment
-    "Llama-3-8B (Mirror)": "unsloth/llama-3-8b-bnb-4bit", # Mirror to avoid 403 errors
-    "Llama-2-7B (Mirror)": "daryl149/llama-2-7b-hf", # Original Llama-2 mirror
+    "tinyDTVi": "./tinyDTVi-tokenizer",
+    "PhoBERT": "vinai/phobert-base",
+    "Qwen2.5": "Qwen/Qwen2.5-0.5B", 
+    "SmolLM2": "HuggingFaceTB/SmolLM2-360M", 
+    "Llama-3": "unsloth/llama-3-8b-bnb-4bit", # Mirror
+    "Llama-2": "daryl149/llama-2-7b-hf", # Mirror
     "GPT-4": "gpt4", # Processed via tiktoken
-    "ViGPT-2 (7B)": "bkai-foundation-models/vietnamese-llama-2-7b-120gb",
 }
 
 def get_fertility(tokenizer_name, path, texts):
@@ -48,31 +47,28 @@ def get_fertility(tokenizer_name, path, texts):
     bytes_per_token = total_chars / total_tokens # Add chars per token metric for Paper
     return fertility, bytes_per_token
 
-# 2. Benchmark Dataset (Using diverse Vietnamese sentences)
-test_sentences = [
-    # --- Academic & News Vietnamese ---
-    "Trí tuệ nhân tạo đang tái định nghĩa cấu trúc kinh tế toàn cầu trong kỷ nguyên số.",
-    "Đại học Quốc gia Hà Nội khẳng định vị thế trong bảng xếp hạng các trường đại học hàng đầu thế giới.",
-    
-    # --- Daily Vietnamese (CulturaX style) ---
-    "Sáng nay mình đi ăn bát phở Thìn mà thấy hương vị vẫn đậm đà như ngày đầu mới ăn vậy.",
-    "Bạn có khỏe không? Hôm qua mình thấy bạn có vẻ mệt mỏi khi đến lớp học của thầy Peter.",
+# 2. Benchmark Dataset (10,000 sentences from CulturaX to match paper claims)
+print("Loading 10,000 sentences from CulturaX...")
+try:
+    from datasets import load_dataset
+    # Stream the dataset to avoid downloading the massive CulturaX corpus
+    ds = load_dataset("uonlp/CulturaX", "vi", split="train", streaming=True)
+    test_sentences = []
+    for row in ds:
+        text = row["text"].strip()
+        if len(text) > 50: # Only take reasonable length sentences
+            test_sentences.append(text)
+        if len(test_sentences) >= 10000:
+            break
+    print("Successfully loaded 10,000 sentences.")
+except Exception as e:
+    print(f"Warning: Failed to load CulturaX directly from HuggingFace ({e}). Falling back to dummy text.")
+    # Fallback to a few sentences just to keep the script runnable without internet/HF
+    test_sentences = [
+        "Trí tuệ nhân tạo đang tái định nghĩa cấu trúc kinh tế toàn cầu trong kỷ nguyên số.",
+        "Đại học Quốc gia Hà Nội khẳng định vị thế trong bảng xếp hạng các trường đại học hàng đầu thế giới."
+    ] * 5000 # duplicate 5000 times to simulate 10,000 sentences
 
-    "Trí tuệ nhân tạo đang thay đổi cách chúng ta làm việc hằng ngày.",
-    "Trường Đại học Bách khoa Hà Nội là một trong những ngôi trường kỹ thuật hàng đầu.",
-    "Sáng nay, chính phủ đã ban hành nghị định mới về phát triển kinh tế số.",
-    "Công thức toán học cơ bản bao gồm cộng, trừ, nhân và chia.",
-    "Sầu riêng là loại trái cây đặc sản của vùng đồng bằng sông Cửu Long.", # Added VN entity
-
-    # --- Standard English (To compare with Llama/GPT) ---
-    # "Artificial Intelligence is fundamentally reshaping the global economic landscape in the digital era.",
-    # "Are you okay? You looked quite unwell when you arrived at Peter's class yesterday.",
-    # "This is for you; I am truly happy about it because I love you so much, brother.",
-
-    # --- Math & Code (Check special character compression) ---
-    # "The quadratic formula is defined as x = (-b ± sqrt(b^2 - 4ac)) / 2a.",
-    # "def factorial(n): return 1 if n == 0 else n * factorial(n-1)"
-]
 
 print(f"{'Model':<20} | {'Fertility':<12} | {'Chars/Token':<12}")
 print("-" * 50)

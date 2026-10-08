@@ -44,7 +44,7 @@ n_head = config.n_head
 n_embd = config.n_embd
 block_size = config.block_size
 vocab_size = config.vocab_size
-dropout = 0.0
+dropout = 0.1
 
 # Data & Training
 batch_size = 1 
